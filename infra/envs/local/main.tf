@@ -36,3 +36,35 @@ resource "helm_release" "argocd" {
   chart            = "argo-cd"
   version          = "10.9.2"
 }
+
+resource "helm_release" "root_app" {
+  name       = "root"
+  namespace  = "argocd"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argocd-apps"
+  version    = "2.0.5"
+
+  values = [yamlencode({
+    applications = {
+      root = {
+        namespace = "argocd"
+        project   = "default"
+        source = {
+          repoURL        = "https://github.com/wolideal/jackindabox.git"
+          targetRevision = "main"
+          path           = "gitops/root"
+        }
+        destination = {
+          server    = "https://kubernetes.default.svc"
+          namespace = "argocd"
+        }
+        syncPolicy = {
+          automated   = { prune = true, selfHeal = true }
+          syncOptions = ["CreateNamespace=true"]
+        }
+      }
+    }
+  })]
+
+  depends_on = [helm_release.argocd]
+}
