@@ -26,6 +26,25 @@ resource "kind_cluster" "this" {
   name           = "jackindabox"
   node_image     = "kindest/node:v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5"
   wait_for_ready = true
+
+  kind_config {
+    kind        = "Cluster"
+    api_version = "kind.x-k8s.io/v1alpha4"
+
+    node {
+      role = "control-plane"
+
+      # Kubelets request serving certificates signed by the cluster CA,
+      # so metrics-server can verify them. Approved by kubelet-csr-approver.
+      kubeadm_config_patches = [
+        <<-EOT
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          kind: KubeletConfiguration
+          serverTLSBootstrap: true
+        EOT
+      ]
+    }
+  }
 }
 
 resource "helm_release" "argocd" {
